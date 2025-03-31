@@ -1,4 +1,40 @@
+import math
+import time
+import numpy as np
+from scipy.sparse.linalg import eigs
 
+import torch
+import torch.nn as nn
+import transformers
+from datetime import datetime
+
+from .APM import APPruner
+from .PCG import PCG
+torch.backends.cuda.matmul.allow_tf32 = False
+torch.backends.cudnn.allow_tf32 = False
+
+class mAPPruner:
+    def __init__(self, layer):
+        self.layer = layer
+        self.dev = self.layer.weight.device
+        self.rows = layer.weight.shape[0]
+        self.columns = layer.weight.shape[1]
+        self.XX = torch.zeros((self.columns, self.columns), device=self.dev)
+        self.nsamples = 0
+
+    def add_batch(self, inp, out):
+        X = inp.reshape(-1, inp.shape[-1]).float()
+        self.XX += X.T.matmul(X)
+
+    def support_diff_size(tensor1, tensor2):
+        def set_nonzero_to_one(tensor):
+            mask = tensor != 0
+            result = torch.zeros_like(tensor, dtype=torch.float)
+            result[mask] = 1
+            return result
+        tensor1 = set_nonzero_to_one(tensor1)
+        tensor2 = set_nonzero_to_one(tensor2)
+        return torch.sum((tensor2-tensor1).abs())
     def fasterprune(
         self, sparsity, prune_n=0, prune_m=0, percdamp=.1 ,  iters=20, per_out=False,lam=0.00001,alpha=0.001,tol=1
     ):
