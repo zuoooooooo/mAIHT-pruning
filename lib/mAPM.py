@@ -90,7 +90,7 @@ class mAPPruner:
             t_0, t_1 = t_1, (math.sqrt(4*t_1**2 +1)+1)/2
             
             # 选择更新方向
-            if (torch.trace((2*W - V - Z).T@XX@(V - Z))/2 <= lam*(torch.count_nonzero(V)-torch.count_nonzero(Z)):
+            if (torch.trace((2*W - V - Z).T@XX@(V - Z))/2 <= lam*(torch.count_nonzero(V)-torch.count_nonzero(Z))):
                 W_0, W_1 = W_1, Z
             else:
                 W_0, W_1 = W_1, V
